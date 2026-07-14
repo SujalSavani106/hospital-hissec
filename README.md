@@ -103,7 +103,7 @@ flowchart TD
     end
     
     User -->|1. Request| Service
-    Service -->|2. Calls enforce()| PEP
+    Service -->|2. Calls enforce| PEP
     PEP -->|3. PolicyRequest Snapshot| PDP
     PDP -->|4. Evaluates Rule| DynamoRules
     DynamoRules -->|5. Allow / Deny| PDP
