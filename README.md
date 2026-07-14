@@ -1,4 +1,3 @@
-
 # HISSEC* - Hospital Information System Security
 
 This project is a comprehensive Rust implementation of the HISSEC* security policy architecture. It enforces a strict Permission Matrix across hospital roles (Manager, Clerk, Physician, Nurse, Paramedic, Patient) utilizing a clean separation of Business Logic, Policy Enforcement (PEP), Policy Decision (PDP), Models, and DYNAMO-generated policies.
@@ -82,123 +81,113 @@ The system strictly enforces that no business service accesses data directly. Al
 ### 1. Execution Workflow (PDP/PEP)
 
 ```mermaid
-graph TD;
-    classDef default fill:#ffffff,stroke:#000000,stroke-width:1px;
-
-    User([User Request]):::default;
-
-    subgraph Business Logic
-        Service[Service Layer<br>Auth / EHR / Sensor / Ward]:::default;
+flowchart TD
+    User([User Request])
+    
+    subgraph BusinessLogic["Business Logic"]
+        Service[Service Layer<br>Auth / EHR / Sensor / Ward]
     end
-
-    subgraph Security Layer
-        PEP{PEP<br>Policy Enforcement Point}:::default;
-        PDP[[PDP<br>Policy Decision Point]]:::default;
-        Audit[G7 Audit Logger]:::default;
+    
+    subgraph SecurityLayer["Security Layer"]
+        PEP{PEP<br>Policy Enforcement Point}
+        PDP[[PDP<br>Policy Decision Point]]
+        Audit[G7 Audit Logger]
     end
-
-    subgraph Repositories
-        Repo[(In-Memory Repositories<br>CRUD)]:::default;
+    
+    subgraph Repositories["Repositories"]
+        Repo[(In-Memory Repositories<br>CRUD)]
     end
-
-    subgraph DYNAMO
-        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]:::default;
+    
+    subgraph DYNAMO["DYNAMO"]
+        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]
     end
-
-    User -->|1. Request| Service;
-    Service -->|2. Calls enforce()| PEP;
-    PEP -->|3. PolicyRequest Snapshot| PDP;
-    PDP -->|4. Evaluates Rule| DynamoRules;
-    DynamoRules -->|5. Allow / Deny| PDP;
-    PDP -->|6. PolicyResponse| PEP;
-    PEP -->|7. Log Decision| Audit;
-    PEP -->|8. If ALLOW| Repo;
-    Repo -->|9. Data| Service;
-    PEP -.->|8. If DENY| Service;
-    Service -->|10. Final Response| User;
+    
+    User -->|1. Request| Service
+    Service -->|2. Calls enforce()| PEP
+    PEP -->|3. PolicyRequest Snapshot| PDP
+    PDP -->|4. Evaluates Rule| DynamoRules
+    DynamoRules -->|5. Allow / Deny| PDP
+    PDP -->|6. PolicyResponse| PEP
+    PEP -->|7. Log Decision| Audit
+    PEP -->|8. If ALLOW| Repo
+    Repo -->|9. Data| Service
+    PEP -.->|8. If DENY| Service
+    Service -->|10. Final Response| User
 ```
     
 ### 2. DYNAMO Integration Map
 
-Permissions are mapped from a formal .dynamo spec file into Rust predicates.
-
 ```mermaid
-graph LR
-    classDef default fill:#ffffff,stroke:#000000,stroke-width:1px;
-
-    subgraph DYNAMO Framework
-        Spec[hissec.dynamo<br>Formal Security Spec]:::default
-        Compiler([dynamo2rust Compiler]):::default
-        Code[policy.rs<br>Rust Logic Predicates]:::default
+flowchart LR
+    subgraph DYNAMO_Framework["DYNAMO Framework"]
+        Spec[hissec.dynamo<br>Formal Security Spec]
+        Compiler([dynamo2rust Compiler])
+        Code[policy.rs<br>Rust Logic Predicates]
         
         Spec -->|Compiles| Compiler
         Compiler -->|Generates| Code
     end
     
-    PDP((Rust PDP)):::default -->|Calls| Code
+    PDP((Rust PDP)) -->|Calls| Code
 ```
 
 ### 3. Hospital State Map
 
-Visualizing the seeded state of the system based on Ward Contexts.
-
 ```mermaid
-graph TD
-    classDef default fill:#ffffff,stroke:#000000,stroke-width:1px;
-
-    subgraph ICU ["Ward: ICU (ward-icu)"]
+flowchart TD
+    subgraph ICU["Ward: ICU (ward-icu)"]
         direction TB
-        subgraph ICU_Users ["Users"]
-            U_MGR["ronak (u-mgr)<br/>Role: Manager"]:::default
-            U_PH1["devarsya (u-ph1)<br/>Role: Physician"]:::default
-            U_NU1["jay (u-nu1)<br/>Role: Nurse"]:::default
-            U_PA1["kishan (u-pa1)<br/>Role: Paramedic"]:::default
-            U_PT1["vivek (u-pt1)<br/>Role: Patient"]:::default
+        subgraph ICU_Users["Users"]
+            U_MGR["ronak (u-mgr)<br/>Role: Manager"]
+            U_PH1["devarsya (u-ph1)<br/>Role: Physician"]
+            U_NU1["jay (u-nu1)<br/>Role: Nurse"]
+            U_PA1["kishan (u-pa1)<br/>Role: Paramedic"]
+            U_PT1["vivek (u-pt1)<br/>Role: Patient"]
         end
-        subgraph ICU_Assets ["Assets"]
-            EHR1["ehr-001<br/>Type: EHR"]:::default
-            SEN1["sen-icu-normal<br/>Type: Normal Sensor"]:::default
-            SEN2["sen-icu-critical<br/>Type: Critical Sensor"]:::default
+        subgraph ICU_Assets["Assets"]
+            EHR1["ehr-001<br/>Type: EHR"]
+            SEN1["sen-icu-normal<br/>Type: Normal Sensor"]
+            SEN2["sen-icu-critical<br/>Type: Critical Sensor"]
         end
     end
 
-    subgraph SURGERY ["Ward: Surgery (ward-surgery)"]
+    subgraph SURGERY["Ward: Surgery (ward-surgery)"]
         direction TB
-        subgraph SURG_Users ["Users"]
-            U_PH2["dr_grace (u-ph2)<br/>Role: Physician"]:::default
-            U_NU2["nurse_henry (u-nu2)<br/>Role: Nurse"]:::default
+        subgraph SURG_Users["Users"]
+            U_PH2["dr_grace (u-ph2)<br/>Role: Physician"]
+            U_NU2["nurse_henry (u-nu2)<br/>Role: Nurse"]
         end
-        subgraph SURG_Assets ["Assets"]
-            EHR2["ehr-002<br/>Type: EHR"]:::default
-            SEN3["sen-surg-normal<br/>Type: Normal Sensor"]:::default
+        subgraph SURG_Assets["Assets"]
+            EHR2["ehr-002<br/>Type: EHR"]
+            SEN3["sen-surg-normal<br/>Type: Normal Sensor"]
         end
     end
 
-    subgraph INTERNAL ["Ward: Internal (ward-internal)"]
+    subgraph INTERNAL["Ward: Internal (ward-internal)"]
         direction TB
-        subgraph INT_Users ["Users"]
-            U_PH3["dr_john (u-ph3)<br/>Role: Physician"]:::default
-            U_NU3["nurse_emma (u-nu3)<br/>Role: Nurse"]:::default
-            U_PT2["patient_anna (u-pt2)<br/>Role: Patient"]:::default
+        subgraph INT_Users["Users"]
+            U_PH3["dr_john (u-ph3)<br/>Role: Physician"]
+            U_NU3["nurse_emma (u-nu3)<br/>Role: Nurse"]
+            U_PT2["patient_anna (u-pt2)<br/>Role: Patient"]
         end
-        subgraph INT_Assets ["Assets"]
-            EHR3["ehr-003<br/>Type: EHR"]:::default
-            SEN4["sen-int-normal<br/>Type: Normal Sensor"]:::default
-            SEN5["sen-int-critical<br/>Type: Critical Sensor"]:::default
+        subgraph INT_Assets["Assets"]
+            EHR3["ehr-003<br/>Type: EHR"]
+            SEN4["sen-int-normal<br/>Type: Normal Sensor"]
+            SEN5["sen-int-critical<br/>Type: Critical Sensor"]
         end
     end
 
-    subgraph MATERNITY ["Ward: Maternity (ward-maternity)"]
+    subgraph MATERNITY["Ward: Maternity (ward-maternity)"]
         direction TB
-        subgraph MAT_Users ["Users"]
-            U_PH4["dr_smith (u-ph4)<br/>Role: Physician"]:::default
-            U_NU4["nurse_sophia (u-nu4)<br/>Role: Nurse"]:::default
-            U_CLK2["clerk_lisa (u-clk2)<br/>Role: Clerk"]:::default
-            U_PT3["patient_mia (u-pt3)<br/>Role: Patient"]:::default
+        subgraph MAT_Users["Users"]
+            U_PH4["dr_smith (u-ph4)<br/>Role: Physician"]
+            U_NU4["nurse_sophia (u-nu4)<br/>Role: Nurse"]
+            U_CLK2["clerk_lisa (u-clk2)<br/>Role: Clerk"]
+            U_PT3["patient_mia (u-pt3)<br/>Role: Patient"]
         end
-        subgraph MAT_Assets ["Assets"]
-            EHR4["ehr-004<br/>Type: EHR"]:::default
-            SEN6["sen-mat-normal<br/>Type: Normal Sensor"]:::default
+        subgraph MAT_Assets["Assets"]
+            EHR4["ehr-004<br/>Type: EHR"]
+            SEN6["sen-mat-normal<br/>Type: Normal Sensor"]
         end
     end
 ```
