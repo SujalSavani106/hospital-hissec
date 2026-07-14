@@ -1,0 +1,376 @@
+// ============================================================
+// HISSEC* DYNAMO Policy Specification
+// ============================================================
+
+begin model HISSEC_STAR:
+
+begin components:
+
+    // Static sets
+    set R;
+    set W;
+    set OP;
+
+    // Dynamic sets
+    set U;
+    set O;
+    set SN;
+    set S;
+
+    // Attribute mappings
+    mapping attr_ur(U : 2^R);
+    mapping attr_uw(U : W);
+
+    mapping attr_ow(O : W);
+
+    mapping attr_sw(SN : W);
+    mapping attr_sc(SN : bool);
+
+    mapping sub_user(S : U);
+    mapping sub_role(S : R);
+
+end components;
+
+
+// ============================================================
+// PRE-CLAUSES
+// ============================================================
+
+begin pre-clauses:
+
+    user_exists(U u1):
+        u1 in U;
+
+    subject_exists(S s1):
+        s1 in S;
+
+    role_valid_for_subject(S s1, R r1):
+        r1 in attr_ur(sub_user(s1));
+
+    ehr_exists(O o1):
+        o1 in O;
+
+    sensor_exists(SN sn1):
+        sn1 in SN;
+
+    ward_exists(W w1):
+        w1 in W;
+
+    same_ward_ehr(S s1, O o1):
+        attr_uw(sub_user(s1)) == attr_ow(o1);
+
+    same_ward_sensor(S s1, SN sn1):
+        attr_uw(sub_user(s1)) == attr_sw(sn1);
+
+    is_critical_sensor(SN sn1):
+        attr_sc(sn1) == true;
+
+    active_role_is(S s1, R r1):
+        sub_role(s1) == r1;
+
+    user_has_role(U u1, R r1):
+        r1 in attr_ur(u1);
+
+end pre-clauses;
+
+
+// ============================================================
+// POST-CLAUSES
+// ============================================================
+
+begin post-clauses;
+
+
+//-------------------------------------------------------------
+// LOGIN
+//-------------------------------------------------------------
+
+begin login(U u1, R r1, S s1):
+
+    pre:
+        user_exists(u1)
+        and user_has_role(u1, r1)
+        and not subject_exists(s1);
+
+    post:
+
+        S = S + { s1 };
+
+        sub_user = sub_user + { (s1 : u1) };
+
+        sub_role = sub_role + { (s1 : r1) };
+
+end;
+
+
+//-------------------------------------------------------------
+// LOGOUT
+//-------------------------------------------------------------
+
+begin logout(S s1):
+
+    pre:
+        subject_exists(s1);
+
+    post:
+
+        S = S - { s1 };
+
+        sub_user = sub_user - { (s1) };
+
+        sub_role = sub_role - { (s1) };
+
+end;
+
+
+//-------------------------------------------------------------
+// READ EHR
+// Physician, Nurse, Manager ONLY
+// Same ward required
+//-------------------------------------------------------------
+
+begin read_ehr(S s1, O o1):
+
+    pre:
+        subject_exists(s1)
+        and ehr_exists(o1)
+        and (
+            active_role_is(s1,"physician")
+            or active_role_is(s1,"nurse")
+            or active_role_is(s1,"manager")
+        )
+        and same_ward_ehr(s1,o1);
+
+    post:
+        /* read only */;
+
+end;
+
+
+//-------------------------------------------------------------
+// FETCH SENSOR
+// Physician/Nurse -> Same ward
+//-------------------------------------------------------------
+
+begin fetch_sensor_physician_nurse(S s1, SN sn1):
+
+    pre:
+        subject_exists(s1)
+        and sensor_exists(sn1)
+        and (
+            active_role_is(s1,"physician")
+            or active_role_is(s1,"nurse")
+        )
+        and same_ward_sensor(s1,sn1);
+
+    post:
+        /* read only */;
+
+end;
+
+
+//-------------------------------------------------------------
+// FETCH SENSOR
+// Paramedic -> Critical only
+//-------------------------------------------------------------
+
+begin fetch_sensor_paramedic(S s1, SN sn1):
+
+    pre:
+        subject_exists(s1)
+        and sensor_exists(sn1)
+        and active_role_is(s1,"paramedic")
+        and is_critical_sensor(sn1);
+
+    post:
+        /* read only */;
+
+end;
+
+
+//-------------------------------------------------------------
+// ADD USER
+// Manager or Clerk
+//-------------------------------------------------------------
+
+begin add_user(S s1, U u_new, W w1):
+
+    pre:
+        subject_exists(s1)
+        and (
+            active_role_is(s1,"manager")
+            or active_role_is(s1,"clerk")
+        )
+        and not user_exists(u_new)
+        and ward_exists(w1);
+
+    post:
+
+        U = U + {u_new};
+
+        attr_ur = attr_ur + {(u_new:{})};
+
+        attr_uw = attr_uw + {(u_new:w1)};
+
+end;
+
+
+//-------------------------------------------------------------
+// REMOVE USER
+// Manager only
+//-------------------------------------------------------------
+
+begin remove_user(S s1, U u_target):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"manager")
+        and user_exists(u_target);
+
+    post:
+
+        U = U - {u_target};
+
+        attr_ur = attr_ur - {(u_target)};
+
+        attr_uw = attr_uw - {(u_target)};
+
+end;
+
+
+//-------------------------------------------------------------
+// CREATE EHR
+// Manager or Clerk
+//-------------------------------------------------------------
+
+begin create_ehr(S s1, O o_new, W w1):
+
+    pre:
+        subject_exists(s1)
+        and (
+            active_role_is(s1,"manager")
+            or active_role_is(s1,"clerk")
+        )
+        and not ehr_exists(o_new)
+        and ward_exists(w1);
+
+    post:
+
+        O = O + {o_new};
+
+        attr_ow = attr_ow + {(o_new:w1)};
+
+end;
+
+
+//-------------------------------------------------------------
+// DELETE EHR
+// Manager only
+//-------------------------------------------------------------
+
+begin delete_ehr(S s1, O o1):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"manager")
+        and ehr_exists(o1);
+
+    post:
+
+        O = O - {o1};
+
+        attr_ow = attr_ow - {(o1)};
+
+end;
+
+
+//-------------------------------------------------------------
+// ASSIGN ROLE
+// Manager -> Any role
+//-------------------------------------------------------------
+
+begin assign_role_manager(S s1, U u_target, R r1):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"manager")
+        and user_exists(u_target);
+
+    post:
+
+        rs = attr_ur(u_target);
+
+        rs = rs + {r1};
+
+        attr_ur = attr_ur + {(u_target:rs)};
+
+end;
+
+
+//-------------------------------------------------------------
+// ASSIGN ROLE
+// Clerk -> Patient only
+//-------------------------------------------------------------
+
+begin assign_role_clerk(S s1, U u_target):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"clerk")
+        and user_exists(u_target);
+
+    post:
+
+        rs = attr_ur(u_target);
+
+        rs = rs + {"patient"};
+
+        attr_ur = attr_ur + {(u_target:rs)};
+
+end;
+
+
+//-------------------------------------------------------------
+// CHANGE WARD
+// Manager -> Any user
+//-------------------------------------------------------------
+
+begin change_ward_manager(S s1, U u_target, W w_new):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"manager")
+        and user_exists(u_target)
+        and ward_exists(w_new);
+
+    post:
+
+        attr_uw = attr_uw + {(u_target:w_new)};
+
+end;
+
+
+//-------------------------------------------------------------
+// CHANGE WARD
+// Physician -> Patients only
+//-------------------------------------------------------------
+
+begin change_ward_physician(S s1, U u_target, W w_new):
+
+    pre:
+        subject_exists(s1)
+        and active_role_is(s1,"physician")
+        and user_exists(u_target)
+        and user_has_role(u_target,"patient")
+        and ward_exists(w_new);
+
+    post:
+
+        attr_uw = attr_uw + {(u_target:w_new)};
+
+end;
+
+
+end post-clauses;
+
+end model;
