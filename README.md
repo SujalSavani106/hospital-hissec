@@ -85,21 +85,21 @@ flowchart TD
     User([User Request])
     
     subgraph BusinessLogic["Business Logic"]
-        Service[Service Layer<br>Auth / EHR / Sensor / Ward]
+        Service[Service Layer<br/>Auth / EHR / Sensor / Ward]
     end
     
     subgraph SecurityLayer["Security Layer"]
-        PEP{PEP<br>Policy Enforcement Point}
-        PDP[[PDP<br>Policy Decision Point]]
+        PEP{PEP<br/>Policy Enforcement Point}
+        PDP[[PDP<br/>Policy Decision Point]]
         Audit[G7 Audit Logger]
     end
     
     subgraph Repositories["Repositories"]
-        Repo[(In-Memory Repositories<br>CRUD)]
+        Repo[(In-Memory Repositories<br/>CRUD)]
     end
     
     subgraph DYNAMO["DYNAMO"]
-        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]
+        DynamoRules[generated/policy.rs<br/>DYNAMO Predicates]
     end
     
     User -->|1. Request| Service
@@ -111,7 +111,7 @@ flowchart TD
     PEP -->|7. Log Decision| Audit
     PEP -->|8. If ALLOW| Repo
     Repo -->|9. Data| Service
-    PEP -.->|8. If DENY| Service
+    PEP -->|8. If DENY| Service
     Service -->|10. Final Response| User
 ```
     
@@ -120,9 +120,9 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph DYNAMO_Framework["DYNAMO Framework"]
-        Spec[hissec.dynamo<br>Formal Security Spec]
+        Spec[hissec.dynamo<br/>Formal Security Spec]
         Compiler([dynamo2rust Compiler])
-        Code[policy.rs<br>Rust Logic Predicates]
+        Code[policy.rs<br/>Rust Logic Predicates]
         
         Spec -->|Compiles| Compiler
         Compiler -->|Generates| Code
@@ -136,7 +136,6 @@ flowchart LR
 ```mermaid
 flowchart TD
     subgraph ICU["Ward: ICU (ward-icu)"]
-        direction TB
         subgraph ICU_Users["Users"]
             U_MGR["ronak (u-mgr)<br/>Role: Manager"]
             U_PH1["devarsya (u-ph1)<br/>Role: Physician"]
@@ -152,7 +151,6 @@ flowchart TD
     end
 
     subgraph SURGERY["Ward: Surgery (ward-surgery)"]
-        direction TB
         subgraph SURG_Users["Users"]
             U_PH2["dr_grace (u-ph2)<br/>Role: Physician"]
             U_NU2["nurse_henry (u-nu2)<br/>Role: Nurse"]
@@ -164,7 +162,6 @@ flowchart TD
     end
 
     subgraph INTERNAL["Ward: Internal (ward-internal)"]
-        direction TB
         subgraph INT_Users["Users"]
             U_PH3["dr_john (u-ph3)<br/>Role: Physician"]
             U_NU3["nurse_emma (u-nu3)<br/>Role: Nurse"]
@@ -178,7 +175,6 @@ flowchart TD
     end
 
     subgraph MATERNITY["Ward: Maternity (ward-maternity)"]
-        direction TB
         subgraph MAT_Users["Users"]
             U_PH4["dr_smith (u-ph4)<br/>Role: Physician"]
             U_NU4["nurse_sophia (u-nu4)<br/>Role: Nurse"]
