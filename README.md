@@ -81,27 +81,28 @@ The system strictly enforces that no business service accesses data directly. Al
 
 ### 1. Execution Workflow (PDP/PEP)
 
+```mermaid
 graph TD
     classDef default fill:#ffffff,stroke:#000000,stroke-width:1px;
 
-    User([User Request])
+    User([User Request]):::default
     
     subgraph Business Logic
-        Service[Service Layer<br>Auth / EHR / Sensor / Ward]
+        Service[Service Layer<br>Auth / EHR / Sensor / Ward]:::default
     end
 
     subgraph Security Layer
-        PEP{PEP<br>Policy Enforcement Point}
-        PDP[[PDP<br>Policy Decision Point]]
-        Audit[G7 Audit Logger]
+        PEP{PEP<br>Policy Enforcement Point}:::default
+        PDP[[PDP<br>Policy Decision Point]]:::default
+        Audit[G7 Audit Logger]:::default
     end
 
     subgraph Repositories
-        Repo[(In-Memory Repositories<br>CRUD)]
+        Repo[(In-Memory Repositories<br>CRUD)]:::default
     end
 
     subgraph DYNAMO
-        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]
+        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]:::default
     end
 
     User -->|1. Request| Service
@@ -115,6 +116,7 @@ graph TD
     Repo -->|9. Data| Service
     PEP -.->|8. If DENY| Service
     Service -->|10. Final Response| User
+```
     
 ### 2. DYNAMO Integration Map
 
