@@ -81,28 +81,27 @@ The system strictly enforces that no business service accesses data directly. Al
 
 ### 1. Execution Workflow (PDP/PEP)
 
-```mermaid
 graph TD
     classDef default fill:#ffffff,stroke:#000000,stroke-width:1px;
 
-    User([User Request]):::default
+    User([User Request])
     
     subgraph Business Logic
-        Service[Service Layer<br>Auth / EHR / Sensor / Ward]:::default
+        Service[Service Layer<br>Auth / EHR / Sensor / Ward]
     end
 
     subgraph Security Layer
-        PEP{PEP<br>Policy Enforcement Point}:::default
-        PDP[[PDP<br>Policy Decision Point]]:::default
-        Audit[G7 Audit Logger]:::default
+        PEP{PEP<br>Policy Enforcement Point}
+        PDP[[PDP<br>Policy Decision Point]]
+        Audit[G7 Audit Logger]
     end
 
     subgraph Repositories
-        Repo[(In-Memory Repositories<br>CRUD)]:::default
+        Repo[(In-Memory Repositories<br>CRUD)]
     end
 
     subgraph DYNAMO
-        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]:::default
+        DynamoRules[generated/policy.rs<br>DYNAMO Predicates]
     end
 
     User -->|1. Request| Service
@@ -116,8 +115,7 @@ graph TD
     Repo -->|9. Data| Service
     PEP -.->|8. If DENY| Service
     Service -->|10. Final Response| User
-```
-
+    
 ### 2. DYNAMO Integration Map
 
 Permissions are mapped from a formal .dynamo spec file into Rust predicates.
